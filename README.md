@@ -8,8 +8,8 @@ If program has more scenes, the area between scenes is filled with colour of top
 
 First pictures shows, that original CZI file has two scenes. After conversion, the final VIPS image looks like second picture - colour is the most similar as it can be.
 
-![alt text](https://github.com/viktoriaas/bObr/blob/master/bielepozadie.png)
-![alt text](https://github.com/viktoriaas/bObr/blob/master/nebielepozadie.png)
+![alt text](https://github.com/viktoriaas/bObr/blob/master/white.png)
+![alt text](https://github.com/viktoriaas/bObr/blob/master/coloured.png)
 
 Program is using two libraries:
    * libCZI - https://github.com/zeiss-microscopy/libCZI
