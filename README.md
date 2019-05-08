@@ -6,7 +6,10 @@ This program was developed as part of bachelor's thesis created at Faculty of In
 The program is capable of converting big CZI images (over 100 000 x 100 000 px) with more focusing layers (Z-index) and many scenes (S-inex) to VIPS images. Each focusing layer is converted separately so if CZI image has 6 layers, program will produce 6 VIPS images.
 If program has more scenes, the area between scenes is filled with colour of top left pixel.
 
+First pictures shows, that original CZI file has two scenes. After conversion, the final VIPS image looks like second picture - colour is the most similar as it can be.
 
+![alt text](https://github.com/viktoriaas/bObr/blob/master/bielepozadie.png)
+![alt text](https://github.com/viktoriaas/bObr/blob/master/nebielepozadie.png)
 
 Program is using two libraries:
    * libCZI - https://github.com/zeiss-microscopy/libCZI
@@ -38,6 +41,5 @@ where [path_to_libCZI] can be something like `-I /home/viktorias/libCZI-master/S
 Run as `./bobr [path_to_czi_file] [optional_path_where_to_save_VIPS]`
 
 If optional path isn't given, the program will save VIPS images to current working directory.
-
 
 Tested on Ubunutu 18.10 and Debian 9.9.
