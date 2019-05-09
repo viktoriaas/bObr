@@ -132,17 +132,6 @@ void multiple(const shared_ptr<libCZI::ICZIReader> &cziReader, int planes, int w
     }
 }
 
-string get_filename(string& to_filename){
-        const string delimiter = "/";
-        size_t pos = 0;
-        string token;
-        while ((pos = to_filename.find(delimiter)) != string::npos) {
-            token = to_filename.substr(0, pos);
-            to_filename.erase(0, pos + delimiter.length());
-        }
-	return to_filename;
-}
-
 
 int main(int argc, char** argv) {
     
@@ -161,7 +150,8 @@ int main(int argc, char** argv) {
 	/// I need to modify input string but argv is const, therefore copying it to new variable  
 	
 	string path_to_file = argv[1];
-	string filename = get_filename(path_to_file);
+        size_t found = path_to_file.find_last_of('/');
+	string filename =  path_to_file.substr(found+1);
 	
 	/// convert string to char*, required in function libCZI::CreateStreamFromFile
         
