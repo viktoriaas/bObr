@@ -13,6 +13,18 @@ using namespace std::experimental::filesystem;
 const int MAXINT = numeric_limits<int>::max();
 
 
+/**
+ *
+ * Converts image data from one plane of CZI image to VIPS image.
+ *
+ * @param subblocks - all subblocks from one plane that contain image data
+ * @param min_x     - minimal X coordinate of whole plane
+ * @param min_y     - minimal Y coordinate of whole plane
+ * @param width     - width of CZI image ( used as width of final VIPS image)
+ * @param height    - height of CZI image ( used as height of final VIPS image)
+ * @param colour    - RGB value definig background colour of CZI image (used as background colour for final VIPS image)
+ * @param location  - whole path where final VIPS is saved, e.g. /home/vips/p1.v
+ */
 void convert2vips(const vector<shared_ptr<libCZI::ISubBlock>> &subblocks, int min_x, int min_y, int width, int height, const vector<double> &colour, char *location){
     VImage black = VImage::black(width, height, vips::VImage::option() -> set("bands",3));
     VImage white = black.new_from_image(colour);
@@ -42,9 +54,12 @@ void convert2vips(const vector<shared_ptr<libCZI::ISubBlock>> &subblocks, int mi
     cout << "Conversion done for " << location << endl;
 }
 
-/// overloaded operator () for comapring subblocks
-//  firstly by S (in case of more scenes in one image), secondly by M
 
+/**
+ *
+ * Overloaded operator () for comparing subblocks, firstly by S (in case of more scenes in one image), secondly by M.
+ *
+ */
 struct mIndexComparator
 {
     bool operator() (const shared_ptr<libCZI::ISubBlock>& struct1, const shared_ptr<libCZI::ISubBlock>& struct2)
@@ -69,6 +84,13 @@ struct mIndexComparator
 };
 
 
+/**
+ *
+ * Finds out RGB value of first pixel in subblock.
+ *
+ * @param subblock - subblock that contains image data
+ * @return vector of double numbers defining RGB colour of image background, e.g. [255, 255, 255] (white)
+ */
 vector<double> getBackgroundColour(shared_ptr<libCZI::ISubBlock>& subblock){
     auto bitmap = subblock->CreateBitmap();
     libCZI::IBitmapData* bm = bitmap.get();
@@ -78,7 +100,23 @@ vector<double> getBackgroundColour(shared_ptr<libCZI::ISubBlock>& subblock){
     return vector<double> {double(px[2]), double(px[1]), double(px[0])}; 
 }
 
-
+/**
+ *
+ * Function iterates through all subblocks from one plane. For every subblock checks if:
+ *         - 0 < M-index < MAXINT (subblock contains image data)
+ *         - Z-index == @param plane (subblock is from relevant plane)
+ * If both conditions are true, subblock is added to vector. After iterating finishes, subblocks in vector are sorted
+ * using custom comparator (@see mIndexComparator), background colour is found out (@see getBackgroundColour)
+ * and conversion is started (@see convert2vips).
+ *
+ * @param cziReader - reader that allows reading subblock data
+ * @param plane     - ordinal number of plane
+ * @param width     - width of CZI image
+ * @param height    - height of CZI image
+ * @param location  - path where final VIPS is saved
+ * @param one       - bool defining whether original CZI had one or more planes
+ *                    (slightly different conversion process for one plane)
+ */
 void one(const shared_ptr<libCZI::ICZIReader> &cziReader, int plane, int width, int height, const string& location, bool one){
     int min_x, min_y = MAXINT;
     vector<shared_ptr<libCZI::ISubBlock>> subblocks;
@@ -118,14 +156,21 @@ void one(const shared_ptr<libCZI::ICZIReader> &cziReader, int plane, int width, 
     sort(subblocks.begin(), subblocks.end(), mIndexComparator());
     
     /// conversion from string to char* as type of parameter 'location' in draw_image(VIPS) is char*
-    // https://stackoverflow.com/questions/7352099/stdstring-to-char
+    /// https://stackoverflow.com/questions/7352099/stdstring-to-char
     
     const vector<double> col = getBackgroundColour(subblocks[0]);
     vector<char> cstr(loc.c_str(), loc.c_str() + loc.size() + 1);
     convert2vips(subblocks, min_x, min_y, width, height, col, &cstr[0]);
 }
 
-
+/**
+ *
+ * @param cziReader - reader that allows reading subblock data
+ * @param planes    - number of planes in CZI image
+ * @param width     - width of CZI image
+ * @param height    - height of CZI image
+ * @param location  - path where final VIPS is saved
+ */
 void multiple(const shared_ptr<libCZI::ICZIReader> &cziReader, int planes, int width, int height, const string& location){
     for (int i = 0; i < planes; i++){
         one(cziReader, i, width, height, location, false);
@@ -147,62 +192,61 @@ int main(int argc, char** argv) {
     
     try{
 	
-	/// I need to modify input string but argv is const, therefore copying it to new variable  
+	/// we need to modify input string but argv is const, therefore copying it to new variable
 	
 	string path_to_file = argv[1];
-        size_t found = path_to_file.find_last_of('/');
+	size_t found = path_to_file.find_last_of('/');
 	string filename =  path_to_file.substr(found+1);
-	
+
 	/// convert string to char*, required in function libCZI::CreateStreamFromFile
         
 	const size_t sz = strlen(argv[1]) + 1;
 	unique_ptr<wchar_t[]> text{new wchar_t[sz]};
-        mbstowcs(text.get(), argv[1], sz);
+	mbstowcs(text.get(), argv[1], sz);
 
 	/// optional path where to save the result, otherwise cwd
 	
 	string location = "";
-        if (argc == 3){
+	if (argc == 3){
 	    location = argv[2];
 	    if (location.back() != '/') {
 	        location += '/';
 	    }
 	    if (!exists(location)){
 	        cerr << "Location " << location << " does not exist!" << endl;
-		return 1;
+		    return 1;
 	    }
-        } else {
+	} else {
 	    string cwd = current_path();
 	    location = cwd + '/';
-        }
+	}
 	location += filename;
 
 	cout << "Opening CZI file" << endl;
-        auto stream = libCZI::CreateStreamFromFile(text.get());
-        auto cziReader = libCZI::CreateCZIReader();
-        cziReader->Open(stream);
+	auto stream = libCZI::CreateStreamFromFile(text.get());
+	auto cziReader = libCZI::CreateCZIReader();
+	cziReader->Open(stream);
 	
-	/// determinig width, height and the number of planes in .czi file
+	/// determining width, height and number of planes in CZI file
 	
 	auto statistics = cziReader->GetStatistics();
-    	int width = statistics.boundingBox.w;
+	int width = statistics.boundingBox.w;
 	int height =  statistics.boundingBox.h;
-        int planes = 0;
+	int planes = 0;
 
-        statistics.dimBounds.EnumValidDimensions([&planes](libCZI::DimensionIndex dim, int start, int size)->bool
-                {
-                    if (dim == libCZI::DimensionIndex::Z) {
-                        planes = size;
-                    }
-                    return true;
-                });
+	statistics.dimBounds.EnumValidDimensions([&planes](libCZI::DimensionIndex dim, int start, int size)->bool
+	{
+	    if (dim == libCZI::DimensionIndex::Z) {
+	        planes = size;
+	    }
+	    return true;
+	});
 	
 	if (planes == 0){
 	    one(cziReader, 0, width, height, location, true);
 	} else {
-            multiple(cziReader, planes, width, height, location);
+	    multiple(cziReader, planes, width, height, location);
 	}
-
     } catch (const exception & ex) {
         cout << endl << ex.what() << endl;
     }
