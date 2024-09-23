@@ -43,3 +43,5 @@ Run as `./bobr [path_to_czi_file] [optional_path_where_to_save_VIPS]`
 If optional path isn't given, the program will save VIPS images to current working directory.
 
 Tested on Ubunutu 18.10 and Debian 9.9.
+
+Revised in 2024, updates coming soon
